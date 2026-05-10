@@ -143,7 +143,7 @@ Status code: `500 Internal Server Error`
 
 ## Notes
 
-- Passwords are hashed before being saved in MongoDB.
+- Passwords are hashed with bcrypt before being saved in MongoDB.
 - API responses do not return the password.
 - Login creates a session token that expires after 24 hours.
 - MongoDB must be connected before using these APIs.

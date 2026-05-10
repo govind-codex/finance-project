@@ -1,33 +1,9 @@
+const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const User = require("../models/User");
 
 const SESSION_DURATION_MS = 24 * 60 * 60 * 1000;
-
-const hashPassword = (password) => {
-  const salt = crypto.randomBytes(16).toString("hex");
-  const hash = crypto
-    .pbkdf2Sync(password, salt, 100000, 64, "sha512")
-    .toString("hex");
-
-  return `${salt}:${hash}`;
-};
-
-const verifyPassword = (password, storedPassword) => {
-  const [salt, storedHash] = storedPassword.split(":");
-
-  if (!salt || !storedHash) {
-    return false;
-  }
-
-  const hash = crypto
-    .pbkdf2Sync(password, salt, 100000, 64, "sha512")
-    .toString("hex");
-
-  return crypto.timingSafeEqual(
-    Buffer.from(hash, "hex"),
-    Buffer.from(storedHash, "hex")
-  );
-};
+const SALT_ROUNDS = 10;
 
 const createSession = () => ({
   token: crypto.randomBytes(32).toString("hex"),
@@ -55,7 +31,7 @@ const registerUser = async (req, res) => {
     const user = await User.create({
       name,
       email,
-      password: hashPassword(password),
+      password: await bcrypt.hash(password, SALT_ROUNDS),
     });
 
     return res.status(201).json({
@@ -86,7 +62,7 @@ const loginUser = async (req, res) => {
 
     const user = await User.findOne({ email });
 
-    if (!user || !verifyPassword(password, user.password)) {
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({
         message: "Invalid email or password",
       });
