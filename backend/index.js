@@ -1,6 +1,7 @@
 const express = require("express");
 const connectDB = require("./src/config/db");
 const authRoutes = require("./src/routes/authRoutes");
+const financeRoutes = require("./src/routes/financeRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -10,6 +11,7 @@ connectDB();
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);
+app.use("/api/finance", financeRoutes);
 
 app.get("/", (req, res) => {
   res.json({
