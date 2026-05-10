@@ -141,6 +141,71 @@ Status code: `500 Internal Server Error`
 }
 ```
 
+## Logout User
+
+Logs out a user by clearing their active session token.
+
+```http
+POST /logout
+```
+
+Full URL:
+
+```text
+http://localhost:5000/api/auth/logout
+```
+
+### Request Header
+
+```http
+Authorization: Bearer session_token_here
+```
+
+You can also send the token in the request body:
+
+```json
+{
+  "sessionToken": "session_token_here"
+}
+```
+
+### Success Response
+
+Status code: `200 OK`
+
+```json
+{
+  "message": "User logged out successfully"
+}
+```
+
+### Error Responses
+
+Status code: `400 Bad Request`
+
+```json
+{
+  "message": "Session token is required"
+}
+```
+
+Status code: `401 Unauthorized`
+
+```json
+{
+  "message": "Invalid or expired session"
+}
+```
+
+Status code: `500 Internal Server Error`
+
+```json
+{
+  "message": "Failed to logout user",
+  "error": "error message here"
+}
+```
+
 ## Notes
 
 - Passwords are hashed with bcrypt before being saved in MongoDB.

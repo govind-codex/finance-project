@@ -10,6 +10,16 @@ const createSession = () => ({
   expiresAt: new Date(Date.now() + SESSION_DURATION_MS),
 });
 
+const getSessionToken = (req) => {
+  const authHeader = req.headers.authorization;
+
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    return authHeader.split(" ")[1];
+  }
+
+  return req.body.sessionToken || req.body.token;
+};
+
 const registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -94,7 +104,44 @@ const loginUser = async (req, res) => {
   }
 };
 
+const logoutUser = async (req, res) => {
+  try {
+    const sessionToken = getSessionToken(req);
+
+    if (!sessionToken) {
+      return res.status(400).json({
+        message: "Session token is required",
+      });
+    }
+
+    const user = await User.findOne({
+      sessionToken,
+      sessionExpiresAt: { $gt: new Date() },
+    });
+
+    if (!user) {
+      return res.status(401).json({
+        message: "Invalid or expired session",
+      });
+    }
+
+    user.sessionToken = null;
+    user.sessionExpiresAt = null;
+    await user.save();
+
+    return res.json({
+      message: "User logged out successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Failed to logout user",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   loginUser,
+  logoutUser,
   registerUser,
 };
