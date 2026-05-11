@@ -2,6 +2,22 @@ const Finance = require("../models/Finance");
 
 const roundToTwo = (value) => Number(value.toFixed(2));
 
+const getGoalAmount = (goal) => {
+  if (typeof goal === "number") {
+    return goal;
+  }
+
+  return Number(goal?.amount || 0);
+};
+
+const getGoalTimeInMonths = (goal) => {
+  if (typeof goal === "number") {
+    return 1;
+  }
+
+  return Number(goal?.timeInMonths || 1);
+};
+
 const getFinanceStatus = (expenseRate, savingsRate) => {
   if (expenseRate > 80) {
     return "High spending";
@@ -52,27 +68,37 @@ const createFinance = async (req, res) => {
       });
     }
 
+    const { name: goalName, amount, timeInMonths } = goal;
     const salaryAmount = Number(salary);
     const expenseAmount = Number(expense);
-    const goalAmount = Number(goal);
+    const goalAmount = Number(amount);
+    const goalTimeInMonths = Number(timeInMonths);
 
     if (
+      !goalName ||
       Number.isNaN(salaryAmount) ||
       Number.isNaN(expenseAmount) ||
-      Number.isNaN(goalAmount)
+      Number.isNaN(goalAmount) ||
+      Number.isNaN(goalTimeInMonths)
     ) {
       return res.status(400).json({
-        message: "Salary, expense, and goal must be valid numbers",
+        message: "Salary, expense, goal name, goal amount, and goal time are required",
       });
     }
 
-    if (salaryAmount < 0 || expenseAmount < 0 || goalAmount < 0) {
+    if (
+      salaryAmount < 0 ||
+      expenseAmount < 0 ||
+      goalAmount < 0 ||
+      goalTimeInMonths < 1
+    ) {
       return res.status(400).json({
-        message: "Salary, expense, and goal cannot be negative",
+        message: "Salary, expense, and goal amount cannot be negative. Goal time must be at least 1 month",
       });
     }
 
     const remainingAmount = salaryAmount - expenseAmount;
+    const monthlyGoalAmount = goalAmount / goalTimeInMonths;
     const goalProgress =
       goalAmount === 0
         ? 100
@@ -81,7 +107,11 @@ const createFinance = async (req, res) => {
     const finance = await Finance.create({
       salary: salaryAmount,
       expense: expenseAmount,
-      goal: goalAmount,
+      goal: {
+        name: goalName,
+        amount: goalAmount,
+        timeInMonths: goalTimeInMonths,
+      },
     });
 
     return res.status(201).json({
@@ -92,6 +122,8 @@ const createFinance = async (req, res) => {
         expense: finance.expense,
         goal: finance.goal,
         remainingAmount,
+        monthlyGoalAmount: roundToTwo(monthlyGoalAmount),
+        canAchieveMonthlyGoal: remainingAmount >= monthlyGoalAmount,
         goalProgress: Number(goalProgress.toFixed(2)),
         isGoalAchieved: remainingAmount >= goalAmount,
       },
@@ -132,9 +164,11 @@ const getFinanceDashboard = async (req, res) => {
 
     const totals = financeData.reduce(
       (acc, item) => {
+        const goalAmount = getGoalAmount(item.goal);
+
         acc.salary += item.salary;
         acc.expense += item.expense;
-        acc.goal += item.goal;
+        acc.goal += goalAmount;
         acc.remaining += item.salary - item.expense;
         return acc;
       },
@@ -163,8 +197,11 @@ const getFinanceDashboard = async (req, res) => {
 
     const entries = financeData.map((item) => {
       const remainingAmount = item.salary - item.expense;
+      const goalAmount = getGoalAmount(item.goal);
+      const goalTimeInMonths = getGoalTimeInMonths(item.goal);
+      const monthlyGoalAmount = goalAmount / goalTimeInMonths;
       const goalProgress =
-        item.goal === 0 ? 100 : Math.min((remainingAmount / item.goal) * 100, 100);
+        goalAmount === 0 ? 100 : Math.min((remainingAmount / goalAmount) * 100, 100);
 
       return {
         id: item._id,
@@ -172,8 +209,10 @@ const getFinanceDashboard = async (req, res) => {
         expense: item.expense,
         goal: item.goal,
         remainingAmount,
+        monthlyGoalAmount: roundToTwo(monthlyGoalAmount),
+        canAchieveMonthlyGoal: remainingAmount >= monthlyGoalAmount,
         goalProgress: roundToTwo(goalProgress),
-        isGoalAchieved: remainingAmount >= item.goal,
+        isGoalAchieved: remainingAmount >= goalAmount,
         createdAt: item.createdAt,
       };
     });

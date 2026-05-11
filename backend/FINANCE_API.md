@@ -8,7 +8,7 @@ http://localhost:5000/api/finance
 
 ## Create Finance Details
 
-Saves a user's salary, expense, and goal, then returns a calculated finance summary.
+Saves a user's salary, expense, and goal details, then returns a calculated finance summary.
 
 ```http
 POST /
@@ -26,7 +26,11 @@ http://localhost:5000/api/finance
 {
   "salary": 50000,
   "expense": 30000,
-  "goal": 15000
+  "goal": {
+    "name": "Buy a laptop",
+    "amount": 60000,
+    "timeInMonths": 6
+  }
 }
 ```
 
@@ -41,10 +45,16 @@ Status code: `201 Created`
     "id": "finance_id_here",
     "salary": 50000,
     "expense": 30000,
-    "goal": 15000,
+    "goal": {
+      "name": "Buy a laptop",
+      "amount": 60000,
+      "timeInMonths": 6
+    },
     "remainingAmount": 20000,
-    "goalProgress": 100,
-    "isGoalAchieved": true
+    "monthlyGoalAmount": 10000,
+    "canAchieveMonthlyGoal": true,
+    "goalProgress": 33.33,
+    "isGoalAchieved": false
   }
 }
 ```
@@ -63,7 +73,7 @@ Status code: `400 Bad Request`
 
 ```json
 {
-  "message": "Salary, expense, and goal must be valid numbers"
+  "message": "Salary, expense, goal name, goal amount, and goal time are required"
 }
 ```
 
@@ -71,7 +81,7 @@ Status code: `400 Bad Request`
 
 ```json
 {
-  "message": "Salary, expense, and goal cannot be negative"
+  "message": "Salary, expense, and goal amount cannot be negative. Goal time must be at least 1 month"
 }
 ```
 
@@ -125,10 +135,16 @@ Status code: `200 OK`
       "id": "finance_id_here",
       "salary": 50000,
       "expense": 30000,
-      "goal": 15000,
+      "goal": {
+        "name": "Buy a laptop",
+        "amount": 60000,
+        "timeInMonths": 6
+      },
       "remainingAmount": 20000,
-      "goalProgress": 100,
-      "isGoalAchieved": true,
+      "monthlyGoalAmount": 10000,
+      "canAchieveMonthlyGoal": true,
+      "goalProgress": 33.33,
+      "isGoalAchieved": false,
       "createdAt": "2026-05-10T10:00:00.000Z"
     }
   ]

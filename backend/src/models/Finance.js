@@ -13,9 +13,21 @@ const financeSchema = new mongoose.Schema(
       min: 0,
     },
     goal: {
-      type: Number,
-      required: true,
-      min: 0,
+      name: {
+        type: String,
+        required: true,
+        trim: true,
+      },
+      amount: {
+        type: Number,
+        required: true,
+        min: 0,
+      },
+      timeInMonths: {
+        type: Number,
+        required: true,
+        min: 1,
+      },
     },
   },
   {
