@@ -14,7 +14,9 @@ const initialLoginData = {
 const initialFinanceData = {
   salary: '',
   expense: '',
-  goal: '',
+  goalName: '',
+  goalAmount: '',
+  goalTimeInMonths: '',
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
@@ -173,7 +175,11 @@ function App() {
         body: JSON.stringify({
           salary: Number(financeData.salary),
           expense: Number(financeData.expense),
-          goal: Number(financeData.goal),
+          goal: {
+            name: financeData.goalName,
+            amount: Number(financeData.goalAmount),
+            timeInMonths: Number(financeData.goalTimeInMonths),
+          },
         }),
       })
 
@@ -233,7 +239,7 @@ function App() {
                 </p>
                 <h1 className="mt-2 text-3xl font-semibold">Welcome, {user.name}</h1>
                 <p className="mt-2 text-sm text-teal-50">
-                  Add your salary, expense, and goal to calculate your finance summary.
+                  Add your salary, expense, and goal details to calculate your finance summary.
                 </p>
               </div>
 
@@ -252,7 +258,7 @@ function App() {
                 <h2 className="text-xl font-semibold text-slate-950">Finance inputs</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
                   These values will be saved to your backend finance API and returned with
-                  remaining amount and goal progress.
+                  remaining amount, monthly goal target, and goal progress.
                 </p>
 
                 <div className="mt-6 grid gap-4 text-sm">
@@ -264,6 +270,12 @@ function App() {
                     <p className="font-semibold text-slate-800">Goal progress</p>
                     <p className="mt-1 text-slate-600">
                       How much of your goal your remaining money covers.
+                    </p>
+                  </div>
+                  <div className="rounded-md border border-slate-200 bg-white p-4">
+                    <p className="font-semibold text-slate-800">Monthly target</p>
+                    <p className="mt-1 text-slate-600">
+                      Goal amount divided by the number of months.
                     </p>
                   </div>
                 </div>
@@ -299,19 +311,50 @@ function App() {
                     />
                   </label>
 
-                  <label className="grid gap-2 text-sm font-medium text-slate-700">
-                    Goal
-                    <input
-                      className="h-12 rounded-md border border-slate-300 px-4 text-base outline-none transition focus:border-[#0f766e] focus:ring-4 focus:ring-teal-100"
-                      min="0"
-                      name="goal"
-                      onChange={handleFinanceChange}
-                      placeholder="15000"
-                      required
-                      type="number"
-                      value={financeData.goal}
-                    />
-                  </label>
+                  <div className="grid gap-5 rounded-md border border-slate-200 bg-slate-50 p-4">
+                    <h2 className="text-lg font-semibold text-slate-950">Goal details</h2>
+
+                    <label className="grid gap-2 text-sm font-medium text-slate-700">
+                      Goal name
+                      <input
+                        className="h-12 rounded-md border border-slate-300 bg-white px-4 text-base outline-none transition focus:border-[#0f766e] focus:ring-4 focus:ring-teal-100"
+                        name="goalName"
+                        onChange={handleFinanceChange}
+                        placeholder="Buy a laptop"
+                        required
+                        type="text"
+                        value={financeData.goalName}
+                      />
+                    </label>
+
+                    <label className="grid gap-2 text-sm font-medium text-slate-700">
+                      Goal amount
+                      <input
+                        className="h-12 rounded-md border border-slate-300 bg-white px-4 text-base outline-none transition focus:border-[#0f766e] focus:ring-4 focus:ring-teal-100"
+                        min="0"
+                        name="goalAmount"
+                        onChange={handleFinanceChange}
+                        placeholder="60000"
+                        required
+                        type="number"
+                        value={financeData.goalAmount}
+                      />
+                    </label>
+
+                    <label className="grid gap-2 text-sm font-medium text-slate-700">
+                      Goal time in months
+                      <input
+                        className="h-12 rounded-md border border-slate-300 bg-white px-4 text-base outline-none transition focus:border-[#0f766e] focus:ring-4 focus:ring-teal-100"
+                        min="1"
+                        name="goalTimeInMonths"
+                        onChange={handleFinanceChange}
+                        placeholder="6"
+                        required
+                        type="number"
+                        value={financeData.goalTimeInMonths}
+                      />
+                    </label>
+                  </div>
 
                   <button
                     className="h-12 rounded-md bg-[#0f766e] px-5 text-sm font-semibold text-white transition hover:bg-[#115e59] disabled:cursor-not-allowed disabled:bg-slate-400"
@@ -351,6 +394,30 @@ function App() {
                       </p>
                     </div>
                     <div>
+                      <p className="text-sm text-slate-500">Goal</p>
+                      <p className="mt-1 text-2xl font-semibold">
+                        {financeSummary.goal?.name}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-slate-500">Goal amount</p>
+                      <p className="mt-1 text-2xl font-semibold">
+                        {financeSummary.goal?.amount}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-slate-500">Goal time</p>
+                      <p className="mt-1 text-2xl font-semibold">
+                        {financeSummary.goal?.timeInMonths} months
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-slate-500">Monthly target</p>
+                      <p className="mt-1 text-2xl font-semibold">
+                        {financeSummary.monthlyGoalAmount}
+                      </p>
+                    </div>
+                    <div>
                       <p className="text-sm text-slate-500">Goal progress</p>
                       <p className="mt-1 text-2xl font-semibold">
                         {financeSummary.goalProgress}%
@@ -360,8 +427,10 @@ function App() {
                       <p className="text-sm text-slate-500">Goal status</p>
                       <p className="mt-1 text-lg font-semibold text-[#0f766e]">
                         {financeSummary.isGoalAchieved
-                          ? 'Goal achieved with your remaining amount.'
-                          : 'Goal not achieved yet. Try reducing expenses or increasing savings.'}
+                          ? 'Full goal achieved with your remaining amount.'
+                          : financeSummary.canAchieveMonthlyGoal
+                            ? 'You can hit this month’s target with your remaining amount.'
+                            : 'Monthly target not achieved yet. Try reducing expenses or increasing savings.'}
                       </p>
                     </div>
                   </div>
