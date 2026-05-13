@@ -1,1 +1,40 @@
 @import "tailwindcss";
+
+@keyframes financeFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes financeBar {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.finance-fade-in {
+  animation: financeFadeIn 420ms ease both;
+}
+
+.finance-slide-up {
+  animation: financeFadeIn 520ms ease both;
+}
+
+.finance-bar {
+  animation: financeBar 900ms ease both;
+  transform-origin: left;
+}
+
+.finance-ring {
+  transition: stroke-dashoffset 900ms ease;
+}

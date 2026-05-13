@@ -37,12 +37,299 @@ const readResponse = async (response) => {
   }
 }
 
+const formatCurrency = (value) =>
+  new Intl.NumberFormat('en-IN', {
+    maximumFractionDigits: 0,
+    style: 'currency',
+    currency: 'INR',
+  }).format(Number(value || 0))
+
+const clampPercent = (value) => Math.max(0, Math.min(Number(value || 0), 100))
+
+function FinanceDashboard({
+  dashboardData,
+  financeSummary,
+  user,
+  onAddAnother,
+  onRefresh,
+  onLogout,
+  isLoading,
+}) {
+  const latestFinance = dashboardData?.entries?.[0] || financeSummary
+  const dashboardSummary = dashboardData?.summary
+  const salary = Number(latestFinance.salary || 0)
+  const expense = Number(latestFinance.expense || 0)
+  const remaining = Number(latestFinance.remainingAmount || 0)
+  const goalAmount = Number(latestFinance.goal?.amount || 0)
+  const monthlyGoalAmount = Number(latestFinance.monthlyGoalAmount || 0)
+  const expensePercent = salary === 0 ? 0 : clampPercent((expense / salary) * 100)
+  const remainingPercent = salary === 0 ? 0 : clampPercent((remaining / salary) * 100)
+  const goalProgress = clampPercent(latestFinance.goalProgress)
+  const monthlyProgress =
+    monthlyGoalAmount === 0 ? 100 : clampPercent((remaining / monthlyGoalAmount) * 100)
+  const circle = 2 * Math.PI * 44
+
+  return (
+    <main className="min-h-screen bg-[#f4f7fb] text-slate-950">
+      <section className="mx-auto min-h-screen w-full max-w-7xl px-5 py-8">
+        <header className="finance-fade-in flex flex-col gap-4 rounded-lg bg-[#0f766e] p-6 text-white shadow-sm md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-100">
+              Finance Dashboard
+            </p>
+            <h1 className="mt-2 text-3xl font-semibold">Hi {user.name}, here is your analysis</h1>
+            <p className="mt-2 text-sm text-teal-50">
+              Your latest salary, expense, and goal plan turned into readable insights.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <button
+              className="h-10 rounded-md bg-white px-5 text-sm font-semibold text-[#0f766e] transition hover:bg-teal-50"
+              onClick={onAddAnother}
+              type="button"
+            >
+              Add another input
+            </button>
+            <button
+              className="h-10 rounded-md border border-white/30 px-5 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-70"
+              disabled={isLoading}
+              onClick={onRefresh}
+              type="button"
+            >
+              Refresh dashboard
+            </button>
+            <button
+              className="h-10 rounded-md border border-white/30 px-5 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-70"
+              disabled={isLoading}
+              onClick={onLogout}
+              type="button"
+            >
+              Logout
+            </button>
+          </div>
+        </header>
+
+        <section className="mt-6 grid gap-4 md:grid-cols-4">
+          {[
+            ['Salary', salary, 'Total income added by you'],
+            ['Expense', expense, `${expensePercent.toFixed(1)}% of salary used`],
+            ['Remaining', remaining, `${remainingPercent.toFixed(1)}% of salary left`],
+            ['Goal Amount', goalAmount, latestFinance.goal?.name],
+          ].map(([label, value, helper], index) => (
+            <div
+              className="finance-slide-up rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
+              key={label}
+              style={{ animationDelay: `${index * 90}ms` }}
+            >
+              <p className="text-sm font-medium text-slate-500">{label}</p>
+              <p className="mt-3 text-2xl font-semibold text-slate-950">
+                {formatCurrency(value)}
+              </p>
+              <p className="mt-2 text-sm text-slate-500">{helper}</p>
+            </div>
+          ))}
+        </section>
+
+        <section className="mt-6 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="finance-slide-up rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-semibold">Money split</h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Expense and remaining balance from your salary.
+                </p>
+              </div>
+              <span className="rounded-md bg-teal-50 px-3 py-1 text-sm font-semibold text-[#0f766e]">
+                {remaining >= 0 ? 'Positive' : 'Overspent'}
+              </span>
+            </div>
+
+            <div className="mt-8 grid items-center gap-8 sm:grid-cols-[220px_1fr]">
+              <div className="relative mx-auto size-56">
+                <svg className="size-56 -rotate-90" viewBox="0 0 120 120">
+                  <circle
+                    cx="60"
+                    cy="60"
+                    fill="none"
+                    r="44"
+                    stroke="#e2e8f0"
+                    strokeWidth="14"
+                  />
+                  <circle
+                    className="finance-ring"
+                    cx="60"
+                    cy="60"
+                    fill="none"
+                    r="44"
+                    stroke="#0f766e"
+                    strokeDasharray={`${circle}`}
+                    strokeDashoffset={`${circle - (circle * remainingPercent) / 100}`}
+                    strokeLinecap="round"
+                    strokeWidth="14"
+                  />
+                  <circle
+                    className="finance-ring"
+                    cx="60"
+                    cy="60"
+                    fill="none"
+                    r="28"
+                    stroke="#f97316"
+                    strokeDasharray={`${2 * Math.PI * 28}`}
+                    strokeDashoffset={`${
+                      2 * Math.PI * 28 - ((2 * Math.PI * 28) * expensePercent) / 100
+                    }`}
+                    strokeLinecap="round"
+                    strokeWidth="10"
+                  />
+                </svg>
+                <div className="absolute inset-0 grid place-items-center text-center">
+                  <div>
+                    <p className="text-sm text-slate-500">Saved</p>
+                    <p className="text-3xl font-semibold text-[#0f766e]">
+                      {remainingPercent.toFixed(0)}%
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-4">
+                <div>
+                  <div className="flex justify-between text-sm">
+                    <span className="font-medium text-slate-700">Remaining</span>
+                    <span>{formatCurrency(remaining)}</span>
+                  </div>
+                  <div className="mt-2 h-3 overflow-hidden rounded-full bg-slate-100">
+                    <div
+                      className="finance-bar h-full rounded-full bg-[#0f766e]"
+                      style={{ width: `${remainingPercent}%` }}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between text-sm">
+                    <span className="font-medium text-slate-700">Expense</span>
+                    <span>{formatCurrency(expense)}</span>
+                  </div>
+                  <div className="mt-2 h-3 overflow-hidden rounded-full bg-slate-100">
+                    <div
+                      className="finance-bar h-full rounded-full bg-orange-500"
+                      style={{ width: `${expensePercent}%` }}
+                    />
+                  </div>
+                </div>
+                <p className="rounded-md bg-slate-50 p-4 text-sm leading-6 text-slate-600">
+                  {expensePercent > 80
+                    ? 'Your expenses are very high compared to salary. Start with non-essential spending.'
+                    : remainingPercent >= 30
+                      ? 'You have a strong remaining balance. This is a healthy place to pursue goals.'
+                      : 'You have some room to save. Try moving closer to a 20% savings rate.'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="finance-slide-up rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="text-xl font-semibold">Goal analytics</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              {latestFinance.goal?.name} in {latestFinance.goal?.timeInMonths} months.
+            </p>
+
+            <div className="mt-6 grid gap-5">
+              <div className="rounded-md border border-slate-200 p-4">
+                <div className="flex justify-between text-sm">
+                  <span className="font-medium text-slate-700">Full goal progress</span>
+                  <span>{goalProgress.toFixed(1)}%</span>
+                </div>
+                <div className="mt-3 h-4 overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className="finance-bar h-full rounded-full bg-indigo-600"
+                    style={{ width: `${goalProgress}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-md border border-slate-200 p-4">
+                <div className="flex justify-between text-sm">
+                  <span className="font-medium text-slate-700">Monthly target progress</span>
+                  <span>{monthlyProgress.toFixed(1)}%</span>
+                </div>
+                <div className="mt-3 h-4 overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className="finance-bar h-full rounded-full bg-emerald-600"
+                    style={{ width: `${monthlyProgress}%` }}
+                  />
+                </div>
+                <p className="mt-3 text-sm text-slate-500">
+                  Monthly target: {formatCurrency(monthlyGoalAmount)}
+                </p>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-md bg-slate-50 p-4">
+                  <p className="text-sm text-slate-500">Months planned</p>
+                  <p className="mt-1 text-2xl font-semibold">
+                    {latestFinance.goal?.timeInMonths}
+                  </p>
+                </div>
+                <div className="rounded-md bg-slate-50 p-4">
+                  <p className="text-sm text-slate-500">Monthly feasibility</p>
+                  <p className="mt-1 text-2xl font-semibold">
+                    {latestFinance.canAchieveMonthlyGoal ? 'On track' : 'At risk'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-md border border-teal-100 bg-teal-50 p-4 text-sm leading-6 text-teal-900">
+                {latestFinance.isGoalAchieved
+                  ? 'Great work. Your remaining amount can cover the full goal today.'
+                  : latestFinance.canAchieveMonthlyGoal
+                    ? 'You can meet the monthly goal target with this month’s remaining amount.'
+                    : 'Your remaining amount is below the monthly target. Lower expenses or extend the timeline.'}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {dashboardSummary && (
+          <section className="finance-slide-up mt-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="text-xl font-semibold">Overall dashboard analytics</h2>
+            <div className="mt-5 grid gap-4 md:grid-cols-4">
+              <div className="rounded-md bg-slate-50 p-4">
+                <p className="text-sm text-slate-500">Total entries</p>
+                <p className="mt-1 text-2xl font-semibold">{dashboardSummary.totalEntries}</p>
+              </div>
+              <div className="rounded-md bg-slate-50 p-4">
+                <p className="text-sm text-slate-500">Savings rate</p>
+                <p className="mt-1 text-2xl font-semibold">{dashboardSummary.savingsRate}%</p>
+              </div>
+              <div className="rounded-md bg-slate-50 p-4">
+                <p className="text-sm text-slate-500">Expense rate</p>
+                <p className="mt-1 text-2xl font-semibold">{dashboardSummary.expenseRate}%</p>
+              </div>
+              <div className="rounded-md bg-slate-50 p-4">
+                <p className="text-sm text-slate-500">Status</p>
+                <p className="mt-1 text-2xl font-semibold">{dashboardSummary.status}</p>
+              </div>
+            </div>
+            <p className="mt-5 rounded-md border border-teal-100 bg-teal-50 p-4 text-sm leading-6 text-teal-900">
+              {dashboardSummary.recommendation}
+            </p>
+          </section>
+        )}
+      </section>
+    </main>
+  )
+}
+
 function App() {
   const [activeView, setActiveView] = useState('login')
   const [registerData, setRegisterData] = useState(initialRegisterData)
   const [loginData, setLoginData] = useState(initialLoginData)
   const [financeData, setFinanceData] = useState(initialFinanceData)
   const [financeSummary, setFinanceSummary] = useState(null)
+  const [dashboardData, setDashboardData] = useState(null)
+  const [financeView, setFinanceView] = useState('input')
   const [sessionToken, setSessionToken] = useState(
     () => localStorage.getItem('sessionToken') || '',
   )
@@ -153,11 +440,48 @@ function App() {
 
       setMessage(`Welcome back, ${data.user.name}. You are logged in.`)
       setLoginData(initialLoginData)
+
+      // Fetch finance data after login to determine initial view
+      try {
+        const financeData = await fetchFinanceDashboard()
+        if (financeData.entries?.length > 0) {
+          setFinanceView('dashboard')
+          setFinanceSummary(financeData.entries[0])
+          setDashboardData(financeData)
+        }
+        // If no data, keep financeView as 'input' (default) so user sees input form
+      } catch (financeErr) {
+        // If finance fetch fails, still show input form so user can try again
+        console.warn('Failed to fetch finance data on login:', financeErr)
+        // Keep financeView as 'input' (default)
+      }
     } catch (err) {
       setError(err.message)
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const fetchFinanceDashboard = async () => {
+    const response = await fetch(`${API_BASE_URL}/api/finance/dashboard`, {
+      headers: {
+        Authorization: `Bearer ${sessionToken}`,
+      },
+    })
+
+    const data = await readResponse(response)
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to fetch dashboard data')
+    }
+
+    setDashboardData(data)
+
+    if (data.entries?.[0]) {
+      setFinanceSummary(data.entries[0])
+    }
+
+    return data
   }
 
   const handleFinanceSubmit = async (event) => {
@@ -190,8 +514,31 @@ function App() {
       }
 
       setFinanceSummary(data.finance)
+      await fetchFinanceDashboard()
       setFinanceData(initialFinanceData)
+      setFinanceView('dashboard')
       setMessage('Finance details saved successfully.')
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleDashboardRefresh = async () => {
+    setIsLoading(true)
+    clearAlerts()
+
+    try {
+      const data = await fetchFinanceDashboard()
+
+      if (!data.entries?.length) {
+        setMessage('No finance data found yet. Add your first finance input.')
+        setFinanceView('input')
+        return
+      }
+
+      setFinanceView('dashboard')
     } catch (err) {
       setError(err.message)
     } finally {
@@ -220,6 +567,8 @@ function App() {
       setSessionToken('')
       setUser(null)
       setFinanceSummary(null)
+      setDashboardData(null)
+      setFinanceView('input')
       setFinanceData(initialFinanceData)
       setActiveView('login')
       setMessage('You have been logged out.')
@@ -228,6 +577,23 @@ function App() {
   }
 
   if (isAuthenticated) {
+    if (financeView === 'dashboard' && financeSummary) {
+      return (
+        <FinanceDashboard
+          dashboardData={dashboardData}
+          financeSummary={financeSummary}
+          isLoading={isLoading}
+          onAddAnother={() => {
+            clearAlerts()
+            setFinanceView('input')
+          }}
+          onRefresh={handleDashboardRefresh}
+          onLogout={handleLogout}
+          user={user}
+        />
+      )
+    }
+
     return (
       <main className="min-h-screen bg-[#f4f7fb] text-slate-950">
         <section className="mx-auto flex min-h-screen w-full max-w-6xl items-center px-5 py-10">
@@ -243,14 +609,24 @@ function App() {
                 </p>
               </div>
 
-              <button
-                className="h-10 rounded-md border border-white/30 px-5 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-70"
-                disabled={isLoading}
-                onClick={handleLogout}
-                type="button"
-              >
-                Logout
-              </button>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <button
+                  className="h-10 rounded-md border border-white/30 px-5 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-70"
+                  disabled={isLoading}
+                  onClick={handleDashboardRefresh}
+                  type="button"
+                >
+                  View dashboard
+                </button>
+                <button
+                  className="h-10 rounded-md border border-white/30 px-5 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-70"
+                  disabled={isLoading}
+                  onClick={handleLogout}
+                  type="button"
+                >
+                  Logout
+                </button>
+              </div>
             </header>
 
             <div className="grid gap-8 p-6 md:grid-cols-[0.9fr_1.1fr] md:p-8">
