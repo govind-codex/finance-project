@@ -1,4 +1,5 @@
 const express = require("express");
+const sessionAuth = require("../auth/sessionAuth");
 const {
   createFinance,
   getFinanceDashboard,
@@ -6,6 +7,7 @@ const {
 
 const router = express.Router();
 
+router.use(sessionAuth);
 router.get("/dashboard", getFinanceDashboard);
 router.post("/", createFinance);
 

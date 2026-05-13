@@ -6,6 +6,12 @@ Base URL:
 http://localhost:5000/api/finance
 ```
 
+All finance APIs require a login session token:
+
+```http
+Authorization: Bearer session_token_here
+```
+
 ## Create Finance Details
 
 Saves a user's salary, expense, and goal details, then returns a calculated finance summary.
@@ -18,6 +24,12 @@ Full URL:
 
 ```text
 http://localhost:5000/api/finance
+```
+
+### Request Header
+
+```http
+Authorization: Bearer session_token_here
 ```
 
 ### Request Body
@@ -106,6 +118,12 @@ Full URL:
 
 ```text
 http://localhost:5000/api/finance/dashboard
+```
+
+### Request Header
+
+```http
+Authorization: Bearer session_token_here
 ```
 
 ### Success Response

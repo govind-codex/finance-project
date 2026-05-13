@@ -105,6 +105,7 @@ const createFinance = async (req, res) => {
         : Math.min((remainingAmount / goalAmount) * 100, 100);
 
     const finance = await Finance.create({
+      user: req.user._id,
       salary: salaryAmount,
       expense: expenseAmount,
       goal: {
@@ -118,6 +119,7 @@ const createFinance = async (req, res) => {
       message: "Finance details saved successfully",
       finance: {
         id: finance._id,
+        user: finance.user,
         salary: finance.salary,
         expense: finance.expense,
         goal: finance.goal,
@@ -138,7 +140,9 @@ const createFinance = async (req, res) => {
 
 const getFinanceDashboard = async (req, res) => {
   try {
-    const financeData = await Finance.find().sort({ createdAt: -1 });
+    const financeData = await Finance.find({ user: req.user._id }).sort({
+      createdAt: -1,
+    });
 
     if (financeData.length === 0) {
       return res.json({
