@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Camera, X } from 'lucide-react'
 
 const initialRegisterData = {
   name: '',
@@ -66,6 +67,10 @@ function FinanceDashboard({
   isLoading,
 }) {
   const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const profilePhotoKey = `profilePhoto:${user.email || user.name || 'user'}`
+  const [profilePhoto, setProfilePhoto] = useState(
+    () => localStorage.getItem(profilePhotoKey) || '',
+  )
   const latestFinance = dashboardData?.entries?.[0] || financeSummary
   const dashboardSummary = dashboardData?.summary
   const goals = latestFinance.goals?.length ? latestFinance.goals : [latestFinance.goal]
@@ -81,6 +86,24 @@ function FinanceDashboard({
   const monthlyProgress =
     monthlyGoalAmount === 0 ? 100 : clampPercent((remaining / monthlyGoalAmount) * 100)
   const circle = 2 * Math.PI * 44
+  const handleProfilePhotoChange = (event) => {
+    const file = event.target.files?.[0]
+
+    if (!file) {
+      return
+    }
+
+    const reader = new FileReader()
+
+    reader.onload = () => {
+      const image = String(reader.result || '')
+
+      setProfilePhoto(image)
+      localStorage.setItem(profilePhotoKey, image)
+    }
+
+    reader.readAsDataURL(file)
+  }
 
   return (
     <main className="dashboard-shell min-h-screen text-slate-950">
@@ -98,12 +121,23 @@ function FinanceDashboard({
 
           <div className="flex flex-col gap-3 sm:flex-row">
             <button
-              className="profile-pulse grid size-10 place-items-center rounded-full bg-white text-sm font-bold text-[#0f766e] transition hover:bg-teal-50"
+              className="profile-pulse relative grid size-10 place-items-center overflow-hidden rounded-full bg-white text-sm font-bold text-[#0f766e] transition hover:bg-teal-50"
               onClick={() => setIsProfileOpen((current) => !current)}
               title="View profile"
               type="button"
             >
-              {user.name?.slice(0, 1)?.toUpperCase() || 'U'}
+              {profilePhoto ? (
+                <img
+                  alt={user.name}
+                  className="size-full object-cover"
+                  src={profilePhoto}
+                />
+              ) : (
+                user.name?.slice(0, 1)?.toUpperCase() || 'U'
+              )}
+              <span className="absolute bottom-0 right-0 grid size-4 place-items-center rounded-full bg-orange-500 text-white">
+                <Camera size={10} />
+              </span>
             </button>
             <button
               className="h-10 rounded-md bg-white px-5 text-sm font-semibold text-[#0f766e] transition hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-70"
@@ -125,45 +159,91 @@ function FinanceDashboard({
         </header>
 
         {isProfileOpen && (
-          <section className="dashboard-panel finance-slide-up mt-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-500">Profile</p>
-                <h2 className="mt-1 text-2xl font-semibold">{user.name}</h2>
-                <p className="mt-1 text-sm text-slate-600">{user.email}</p>
-              </div>
-              <div className="grid gap-3 text-sm sm:grid-cols-3">
-                <div className="rounded-md bg-slate-50 p-3">
-                  <p className="text-slate-500">Salary</p>
-                  <p className="mt-1 font-semibold">{formatCurrency(salary)}</p>
-                </div>
-                <div className="rounded-md bg-slate-50 p-3">
-                  <p className="text-slate-500">Expense</p>
-                  <p className="mt-1 font-semibold">{formatCurrency(expense)}</p>
-                </div>
-                <div className="rounded-md bg-slate-50 p-3">
-                  <p className="text-slate-500">Goals</p>
-                  <p className="mt-1 font-semibold">{goals.length}/3</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-5 grid gap-3 md:grid-cols-3">
-              {goals.map((goal, index) => (
-                <div
-                  className="dashboard-mini-panel rounded-md border border-slate-200 p-4"
-                  key={`${goal.name}-${index}`}
-                  style={{ animationDelay: `${index * 80}ms` }}
+          <>
+            <button
+              aria-label="Close profile"
+              className="profile-scrim fixed inset-0 z-30 bg-slate-950/30"
+              onClick={() => setIsProfileOpen(false)}
+              type="button"
+            />
+            <aside className="profile-drawer fixed left-0 top-0 z-40 flex h-dvh w-full max-w-sm flex-col overflow-y-auto bg-white shadow-2xl">
+              <div className="profile-drawer-top relative bg-[#0f766e] px-6 pb-8 pt-6 text-white">
+                <button
+                  className="absolute right-4 top-4 grid size-9 place-items-center rounded-full bg-white/15 text-white transition hover:bg-white/25"
+                  onClick={() => setIsProfileOpen(false)}
+                  title="Close profile"
+                  type="button"
                 >
-                  <p className="text-sm text-slate-500">Goal {index + 1}</p>
-                  <p className="mt-1 font-semibold text-slate-950">{goal.name}</p>
-                  <p className="mt-2 text-sm text-slate-600">
-                    {formatCurrency(goal.amount)} in {goal.timeInMonths} months
-                  </p>
+                  <X size={18} />
+                </button>
+
+                <div className="mt-10 flex flex-col items-center text-center">
+                  <label className="group relative block size-28 cursor-pointer overflow-hidden rounded-full border-4 border-white bg-teal-50 shadow-xl">
+                    {profilePhoto ? (
+                      <img
+                        alt={user.name}
+                        className="size-full object-cover"
+                        src={profilePhoto}
+                      />
+                    ) : (
+                      <span className="grid size-full place-items-center text-4xl font-bold text-[#0f766e]">
+                        {user.name?.slice(0, 1)?.toUpperCase() || 'U'}
+                      </span>
+                    )}
+                    <span className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-1 bg-slate-950/65 py-2 text-xs font-semibold text-white opacity-100 transition group-hover:bg-slate-950/80">
+                      <Camera size={14} />
+                      Photo
+                    </span>
+                    <input
+                      accept="image/*"
+                      className="sr-only"
+                      onChange={handleProfilePhotoChange}
+                      type="file"
+                    />
+                  </label>
+
+                  <h2 className="mt-4 text-2xl font-semibold">{user.name}</h2>
+                  <p className="mt-1 max-w-full break-words text-sm text-teal-50">{user.email}</p>
                 </div>
-              ))}
-            </div>
-          </section>
+              </div>
+
+              <div className="grid gap-4 p-5">
+                <div className="profile-stat-card rounded-md border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-sm text-slate-500">Salary</p>
+                  <p className="mt-1 text-xl font-semibold">{formatCurrency(salary)}</p>
+                </div>
+                <div className="profile-stat-card rounded-md border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-sm text-slate-500">Expense</p>
+                  <p className="mt-1 text-xl font-semibold">{formatCurrency(expense)}</p>
+                </div>
+                <div className="profile-stat-card rounded-md border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-sm text-slate-500">Goals</p>
+                  <p className="mt-1 text-xl font-semibold">{goals.length}/3</p>
+                </div>
+              </div>
+
+              <div className="px-5 pb-6">
+                <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  Goal list
+                </h3>
+                <div className="mt-4 grid gap-3">
+                  {goals.map((goal, index) => (
+                    <div
+                      className="profile-goal-card rounded-md border border-slate-200 p-4"
+                      key={`${goal.name}-${index}`}
+                      style={{ animationDelay: `${index * 90}ms` }}
+                    >
+                      <p className="text-sm text-slate-500">Goal {index + 1}</p>
+                      <p className="mt-1 font-semibold text-slate-950">{goal.name}</p>
+                      <p className="mt-2 text-sm text-slate-600">
+                        {formatCurrency(goal.amount)} in {goal.timeInMonths} months
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </aside>
+          </>
         )}
 
         <section className="mt-6 grid gap-4 md:grid-cols-4">

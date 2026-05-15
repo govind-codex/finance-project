@@ -54,6 +54,39 @@
   }
 }
 
+@keyframes drawerIn {
+  from {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scrimIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes photoFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
 @keyframes financeBar {
   from {
     transform: scaleX(0);
@@ -143,6 +176,60 @@
   animation: profilePulse 2.8s ease-in-out infinite;
 }
 
+.profile-scrim {
+  animation: scrimIn 220ms ease both;
+}
+
+.profile-drawer {
+  animation: drawerIn 460ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+.profile-drawer-top {
+  overflow: hidden;
+}
+
+.profile-drawer-top::before {
+  content: "";
+  position: absolute;
+  inset: auto -25% -40% -25%;
+  height: 180px;
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 999px 999px 0 0;
+  pointer-events: none;
+}
+
+.profile-drawer label {
+  animation: photoFloat 4s ease-in-out infinite;
+}
+
+.profile-stat-card,
+.profile-goal-card {
+  animation: financeFadeIn 480ms ease both;
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease,
+    border-color 220ms ease;
+}
+
+.profile-stat-card:hover,
+.profile-goal-card:hover {
+  border-color: rgba(15, 118, 110, 0.28);
+  box-shadow: 0 14px 35px rgba(15, 23, 42, 0.08);
+  transform: translateX(4px);
+}
+
+.profile-stat-card:nth-child(1) {
+  animation-delay: 120ms;
+}
+
+.profile-stat-card:nth-child(2) {
+  animation-delay: 180ms;
+}
+
+.profile-stat-card:nth-child(3) {
+  animation-delay: 240ms;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .dashboard-shell,
   .finance-hero,
@@ -151,13 +238,20 @@
   .finance-bar,
   .finance-ring,
   .profile-pulse,
-  .dashboard-mini-panel {
+  .dashboard-mini-panel,
+  .profile-scrim,
+  .profile-drawer,
+  .profile-drawer label,
+  .profile-stat-card,
+  .profile-goal-card {
     animation: none;
   }
 
   .dashboard-card,
   .dashboard-panel,
-  .dashboard-mini-panel {
+  .dashboard-mini-panel,
+  .profile-stat-card,
+  .profile-goal-card {
     transition: none;
   }
 }
