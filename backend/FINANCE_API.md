@@ -15,6 +15,8 @@ Authorization: Bearer session_token_here
 ## Create Finance Details
 
 Saves a user's salary, expense, and goal details, then returns a calculated finance summary.
+Each user can create finance details only one time.
+The first submitted goal is saved as goal 1. A user can have up to 3 goals total.
 
 ```http
 POST /
@@ -62,12 +64,91 @@ Status code: `201 Created`
       "amount": 60000,
       "timeInMonths": 6
     },
+    "goals": [
+      {
+        "name": "Buy a laptop",
+        "amount": 60000,
+        "timeInMonths": 6
+      }
+    ],
     "remainingAmount": 20000,
     "monthlyGoalAmount": 10000,
     "canAchieveMonthlyGoal": true,
     "goalProgress": 33.33,
     "isGoalAchieved": false
   }
+}
+```
+
+## Add Goal
+
+Adds another goal to the user's existing finance details. A user can add up to 3 goals total.
+
+```http
+POST /goals
+```
+
+Full URL:
+
+```text
+http://localhost:5000/api/finance/goals
+```
+
+### Request Header
+
+```http
+Authorization: Bearer session_token_here
+```
+
+### Request Body
+
+```json
+{
+  "goal": {
+    "name": "Emergency fund",
+    "amount": 30000,
+    "timeInMonths": 4
+  }
+}
+```
+
+### Success Response
+
+Status code: `201 Created`
+
+```json
+{
+  "message": "Goal added successfully",
+  "goals": [
+    {
+      "name": "Buy a laptop",
+      "amount": 60000,
+      "timeInMonths": 6
+    },
+    {
+      "name": "Emergency fund",
+      "amount": 30000,
+      "timeInMonths": 4
+    }
+  ]
+}
+```
+
+### Error Responses
+
+Status code: `404 Not Found`
+
+```json
+{
+  "message": "Finance details not found. Add finance details first"
+}
+```
+
+Status code: `409 Conflict`
+
+```json
+{
+  "message": "You can add only 3 goals"
 }
 ```
 
@@ -94,6 +175,14 @@ Status code: `400 Bad Request`
 ```json
 {
   "message": "Salary, expense, and goal amount cannot be negative. Goal time must be at least 1 month"
+}
+```
+
+Status code: `409 Conflict`
+
+```json
+{
+  "message": "Finance details already exist for this user"
 }
 ```
 

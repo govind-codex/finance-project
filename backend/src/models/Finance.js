@@ -34,10 +34,31 @@ const financeSchema = new mongoose.Schema(
         min: 1,
       },
     },
+    goals: [
+      {
+        name: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        amount: {
+          type: Number,
+          required: true,
+          min: 0,
+        },
+        timeInMonths: {
+          type: Number,
+          required: true,
+          min: 1,
+        },
+      },
+    ],
   },
   {
     timestamps: true,
   }
 );
+
+financeSchema.index({ user: 1 }, { unique: true });
 
 module.exports = mongoose.model("Finance", financeSchema);
