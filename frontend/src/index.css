@@ -250,6 +250,7 @@
 }
 
 .dashboard-shell.theme-dark .dashboard-mini-panel,
+.dashboard-shell.theme-dark .profile-info-card,
 .dashboard-shell.theme-dark .profile-stat-card,
 .dashboard-shell.theme-dark .profile-goal-card,
 .dashboard-shell.theme-dark .rounded-md.bg-slate-50 {
@@ -383,6 +384,7 @@
   animation: photoFloat 4s ease-in-out infinite;
 }
 
+.profile-info-card,
 .profile-stat-card,
 .profile-goal-card {
   animation: financeFadeIn 480ms ease both;
@@ -392,6 +394,7 @@
     border-color 220ms ease;
 }
 
+.profile-info-card:hover,
 .profile-stat-card:hover,
 .profile-goal-card:hover {
   border-color: rgba(15, 118, 110, 0.28);
@@ -399,15 +402,19 @@
   transform: translateX(4px);
 }
 
-.profile-stat-card:nth-child(1) {
-  animation-delay: 120ms;
+.profile-info-card {
+  animation-delay: 80ms;
 }
 
 .profile-stat-card:nth-child(2) {
-  animation-delay: 180ms;
+  animation-delay: 120ms;
 }
 
 .profile-stat-card:nth-child(3) {
+  animation-delay: 180ms;
+}
+
+.profile-stat-card:nth-child(4) {
   animation-delay: 240ms;
 }
 
@@ -428,6 +435,7 @@
   .profile-scrim,
   .profile-drawer,
   .profile-drawer label,
+  .profile-info-card,
   .profile-stat-card,
   .profile-goal-card {
     animation: none;
@@ -436,6 +444,7 @@
   .dashboard-card,
   .dashboard-panel,
   .dashboard-mini-panel,
+  .profile-info-card,
   .profile-stat-card,
   .profile-goal-card {
     transition: none;

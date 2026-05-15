@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Camera, LogOut, Moon, RefreshCw, Sun, X } from 'lucide-react'
+import { Camera, LogOut, Mail, Moon, RefreshCw, Sun, User, X } from 'lucide-react'
 
 const initialRegisterData = {
   name: '',
@@ -214,6 +214,62 @@ function FinanceDashboard({
               </div>
 
               <div className="grid gap-4 p-5">
+                <section className="profile-info-card rounded-md border border-slate-200 bg-white p-4">
+                  <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    Profile
+                  </h3>
+                  <div className="mt-4 flex items-start gap-4">
+                    <label className="group relative grid size-16 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-md bg-teal-50 text-xl font-bold text-[#0f766e]">
+                      {profilePhoto ? (
+                        <img
+                          alt={user.name}
+                          className="size-full object-cover"
+                          src={profilePhoto}
+                        />
+                      ) : (
+                        user.name?.slice(0, 1)?.toUpperCase() || 'U'
+                      )}
+                      <span className="absolute inset-x-0 bottom-0 flex items-center justify-center bg-slate-950/65 py-1 text-[10px] font-semibold text-white opacity-100 transition group-hover:bg-slate-950/80">
+                        Edit
+                      </span>
+                      <input
+                        accept="image/*"
+                        className="sr-only"
+                        onChange={handleProfilePhotoChange}
+                        type="file"
+                      />
+                    </label>
+                    <div className="grid min-w-0 flex-1 gap-3">
+                      <div className="flex items-start gap-3">
+                      <span className="grid size-9 shrink-0 place-items-center rounded-md bg-teal-50 text-[#0f766e]">
+                        <User size={17} />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                          Name
+                        </p>
+                        <p className="mt-1 break-words font-semibold text-slate-950">
+                          {user.name || 'User'}
+                        </p>
+                      </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                      <span className="grid size-9 shrink-0 place-items-center rounded-md bg-orange-50 text-orange-600">
+                        <Mail size={17} />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                          Email
+                        </p>
+                        <p className="mt-1 break-words font-semibold text-slate-950">
+                          {user.email || 'No email added'}
+                        </p>
+                      </div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
                 <div className="profile-stat-card rounded-md border border-slate-200 bg-slate-50 p-4">
                   <p className="text-sm text-slate-500">Salary</p>
                   <p className="mt-1 text-xl font-semibold">{formatCurrency(salary)}</p>
