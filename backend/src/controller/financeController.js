@@ -26,6 +26,28 @@ const getFinanceGoals = (finance) => {
   return finance.goal ? [finance.goal] : [];
 };
 
+const getGoalSummary = (goals) =>
+  goals.reduce(
+    (summary, goal) => {
+      const amount = getGoalAmount(goal);
+      const timeInMonths = getGoalTimeInMonths(goal);
+
+      summary.totalAmount += amount;
+      summary.monthlyTarget += amount / timeInMonths;
+      summary.longestTimeInMonths = Math.max(
+        summary.longestTimeInMonths,
+        timeInMonths
+      );
+
+      return summary;
+    },
+    {
+      totalAmount: 0,
+      monthlyTarget: 0,
+      longestTimeInMonths: 0,
+    }
+  );
+
 const validateGoalInput = (goal) => {
   const { name, amount, timeInMonths } = goal || {};
   const goalAmount = Number(amount);
@@ -139,21 +161,20 @@ const createFinance = async (req, res) => {
       });
     }
 
-    const goalAmount = validatedGoal.goal.amount;
-    const goalTimeInMonths = validatedGoal.goal.timeInMonths;
+    const goals = [validatedGoal.goal];
+    const goalSummary = getGoalSummary(goals);
     const remainingAmount = salaryAmount - expenseAmount;
-    const monthlyGoalAmount = goalAmount / goalTimeInMonths;
     const goalProgress =
-      goalAmount === 0
+      goalSummary.totalAmount === 0
         ? 100
-        : Math.min((remainingAmount / goalAmount) * 100, 100);
+        : Math.min((remainingAmount / goalSummary.totalAmount) * 100, 100);
 
     const finance = await Finance.create({
       user: req.user._id,
       salary: salaryAmount,
       expense: expenseAmount,
       goal: validatedGoal.goal,
-      goals: [validatedGoal.goal],
+      goals,
     });
 
     return res.status(201).json({
@@ -165,11 +186,14 @@ const createFinance = async (req, res) => {
         expense: finance.expense,
         goal: finance.goal,
         goals: finance.goals,
+        goalCount: finance.goals.length,
+        totalGoalAmount: roundToTwo(goalSummary.totalAmount),
+        longestGoalTimeInMonths: goalSummary.longestTimeInMonths,
         remainingAmount,
-        monthlyGoalAmount: roundToTwo(monthlyGoalAmount),
-        canAchieveMonthlyGoal: remainingAmount >= monthlyGoalAmount,
+        monthlyGoalAmount: roundToTwo(goalSummary.monthlyTarget),
+        canAchieveMonthlyGoal: remainingAmount >= goalSummary.monthlyTarget,
         goalProgress: Number(goalProgress.toFixed(2)),
-        isGoalAchieved: remainingAmount >= goalAmount,
+        isGoalAchieved: remainingAmount >= goalSummary.totalAmount,
       },
     });
   } catch (error) {
@@ -222,6 +246,59 @@ const addFinanceGoal = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       message: "Failed to add goal",
+      error: error.message,
+    });
+  }
+};
+
+const updateFinanceAmounts = async (req, res) => {
+  try {
+    const { salary, expense } = req.body;
+    const salaryAmount = Number(salary);
+    const expenseAmount = Number(expense);
+
+    if (
+      salary === undefined ||
+      expense === undefined ||
+      Number.isNaN(salaryAmount) ||
+      Number.isNaN(expenseAmount)
+    ) {
+      return res.status(400).json({
+        message: "Salary and expense are required",
+      });
+    }
+
+    if (salaryAmount < 0 || expenseAmount < 0) {
+      return res.status(400).json({
+        message: "Salary and expense cannot be negative",
+      });
+    }
+
+    const finance = await Finance.findOneAndUpdate(
+      { user: req.user._id },
+      {
+        salary: salaryAmount,
+        expense: expenseAmount,
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+
+    if (!finance) {
+      return res.status(404).json({
+        message: "Finance details not found. Add finance details first",
+      });
+    }
+
+    return res.json({
+      message: "Salary and expense updated successfully",
+      finance,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Failed to update salary and expense",
       error: error.message,
     });
   }
@@ -294,12 +371,12 @@ const getFinanceDashboard = async (req, res) => {
 
     const entries = financeData.map((item) => {
       const remainingAmount = item.salary - item.expense;
-      const goalAmount = getGoalAmount(item.goal);
-      const goalTimeInMonths = getGoalTimeInMonths(item.goal);
       const goals = getFinanceGoals(item);
-      const monthlyGoalAmount = goalAmount / goalTimeInMonths;
+      const goalSummary = getGoalSummary(goals);
       const goalProgress =
-        goalAmount === 0 ? 100 : Math.min((remainingAmount / goalAmount) * 100, 100);
+        goalSummary.totalAmount === 0
+          ? 100
+          : Math.min((remainingAmount / goalSummary.totalAmount) * 100, 100);
 
       return {
         id: item._id,
@@ -307,11 +384,14 @@ const getFinanceDashboard = async (req, res) => {
         expense: item.expense,
         goal: item.goal,
         goals,
+        goalCount: goals.length,
+        totalGoalAmount: roundToTwo(goalSummary.totalAmount),
+        longestGoalTimeInMonths: goalSummary.longestTimeInMonths,
         remainingAmount,
-        monthlyGoalAmount: roundToTwo(monthlyGoalAmount),
-        canAchieveMonthlyGoal: remainingAmount >= monthlyGoalAmount,
+        monthlyGoalAmount: roundToTwo(goalSummary.monthlyTarget),
+        canAchieveMonthlyGoal: remainingAmount >= goalSummary.monthlyTarget,
         goalProgress: roundToTwo(goalProgress),
-        isGoalAchieved: remainingAmount >= goalAmount,
+        isGoalAchieved: remainingAmount >= goalSummary.totalAmount,
         createdAt: item.createdAt,
       };
     });
@@ -347,4 +427,5 @@ module.exports = {
   addFinanceGoal,
   createFinance,
   getFinanceDashboard,
+  updateFinanceAmounts,
 };
