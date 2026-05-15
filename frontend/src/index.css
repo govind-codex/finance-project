@@ -380,7 +380,7 @@
   pointer-events: none;
 }
 
-.profile-drawer label {
+.profile-drawer .profile-photo-label {
   animation: photoFloat 4s ease-in-out infinite;
 }
 
@@ -434,7 +434,7 @@
   .dashboard-mini-panel,
   .profile-scrim,
   .profile-drawer,
-  .profile-drawer label,
+  .profile-drawer .profile-photo-label,
   .profile-info-card,
   .profile-stat-card,
   .profile-goal-card {

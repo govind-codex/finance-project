@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Camera, LogOut, Mail, Moon, RefreshCw, Sun, User, X } from 'lucide-react'
 
 const initialRegisterData = {
@@ -24,6 +24,11 @@ const initialGoalData = {
   goalName: '',
   goalAmount: '',
   goalTimeInMonths: '',
+}
+
+const initialProfileFinanceData = {
+  salary: '',
+  expense: '',
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
@@ -62,9 +67,12 @@ function FinanceDashboard({
   message,
   onAddGoal,
   onGoalChange,
+  onProfileFinanceChange,
+  onProfileFinanceSubmit,
   onRefresh,
   onLogout,
   onToggleTheme,
+  profileFinanceData,
   isLoading,
   isDarkMode,
 }) {
@@ -80,8 +88,20 @@ function FinanceDashboard({
   const salary = Number(latestFinance.salary || 0)
   const expense = Number(latestFinance.expense || 0)
   const remaining = Number(latestFinance.remainingAmount || 0)
-  const goalAmount = Number(latestFinance.goal?.amount || 0)
+  const goalAmount = Number(
+    latestFinance.totalGoalAmount ??
+      goals.reduce((total, goal) => total + Number(goal?.amount || 0), 0),
+  )
   const monthlyGoalAmount = Number(latestFinance.monthlyGoalAmount || 0)
+  const longestGoalTimeInMonths = Number(
+    latestFinance.longestGoalTimeInMonths ||
+      goals.reduce(
+        (longestTime, goal) => Math.max(longestTime, Number(goal?.timeInMonths || 0)),
+        0,
+      ),
+  )
+  const goalSummaryLabel =
+    goals.length > 1 ? `${goals.length} goals total` : latestFinance.goal?.name
   const expensePercent = salary === 0 ? 0 : clampPercent((expense / salary) * 100)
   const remainingPercent = salary === 0 ? 0 : clampPercent((remaining / salary) * 100)
   const goalProgress = clampPercent(latestFinance.goalProgress)
@@ -184,7 +204,7 @@ function FinanceDashboard({
                 </button>
 
                 <div className="mt-10 flex flex-col items-center text-center">
-                  <label className="group relative block size-28 cursor-pointer overflow-hidden rounded-full border-4 border-white bg-teal-50 shadow-xl">
+                  <label className="profile-photo-label group relative block size-28 cursor-pointer overflow-hidden rounded-full border-4 border-white bg-teal-50 shadow-xl">
                     {profilePhoto ? (
                       <img
                         alt={user.name}
@@ -219,7 +239,7 @@ function FinanceDashboard({
                     Profile
                   </h3>
                   <div className="mt-4 flex items-start gap-4">
-                    <label className="group relative grid size-16 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-md bg-teal-50 text-xl font-bold text-[#0f766e]">
+                    <label className="profile-photo-label group relative grid size-16 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-md bg-teal-50 text-xl font-bold text-[#0f766e]">
                       {profilePhoto ? (
                         <img
                           alt={user.name}
@@ -270,14 +290,53 @@ function FinanceDashboard({
                   </div>
                 </section>
 
-                <div className="profile-stat-card rounded-md border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-sm text-slate-500">Salary</p>
-                  <p className="mt-1 text-xl font-semibold">{formatCurrency(salary)}</p>
-                </div>
-                <div className="profile-stat-card rounded-md border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-sm text-slate-500">Expense</p>
-                  <p className="mt-1 text-xl font-semibold">{formatCurrency(expense)}</p>
-                </div>
+                <form
+                  className="profile-stat-card grid gap-4 rounded-md border border-slate-200 bg-slate-50 p-4"
+                  onSubmit={onProfileFinanceSubmit}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
+                      Finance
+                    </h3>
+                    <button
+                      className="h-9 rounded-md bg-[#0f766e] px-4 text-sm font-semibold text-white transition hover:bg-[#115e59] disabled:cursor-not-allowed disabled:bg-slate-400"
+                      disabled={isLoading}
+                      type="submit"
+                    >
+                      {isLoading ? 'Saving...' : 'Save'}
+                    </button>
+                  </div>
+                  <label className="grid gap-2 text-sm font-medium text-slate-700">
+                    Salary
+                    <input
+                      className="h-11 rounded-md border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-[#0f766e] focus:ring-4 focus:ring-teal-100"
+                      min="0"
+                      name="salary"
+                      onChange={onProfileFinanceChange}
+                      required
+                      type="number"
+                      value={profileFinanceData.salary}
+                    />
+                  </label>
+                  <label className="grid gap-2 text-sm font-medium text-slate-700">
+                    Expense
+                    <input
+                      className="h-11 rounded-md border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-[#0f766e] focus:ring-4 focus:ring-teal-100"
+                      min="0"
+                      name="expense"
+                      onChange={onProfileFinanceChange}
+                      required
+                      type="number"
+                      value={profileFinanceData.expense}
+                    />
+                  </label>
+                  <p className="rounded-md bg-white p-3 text-sm text-slate-600">
+                    Remaining after update: {formatCurrency(
+                      Number(profileFinanceData.salary || 0) -
+                        Number(profileFinanceData.expense || 0),
+                    )}
+                  </p>
+                </form>
                 <div className="profile-stat-card rounded-md border border-slate-200 bg-slate-50 p-4">
                   <p className="text-sm text-slate-500">Goals</p>
                   <p className="mt-1 text-xl font-semibold">{goals.length}/3</p>
@@ -325,7 +384,7 @@ function FinanceDashboard({
             ['Salary', salary, 'Total income added by you'],
             ['Expense', expense, `${expensePercent.toFixed(1)}% of salary used`],
             ['Remaining', remaining, `${remainingPercent.toFixed(1)}% of salary left`],
-            ['Goal Amount', goalAmount, latestFinance.goal?.name],
+            ['Goal Amount', goalAmount, goalSummaryLabel],
           ].map(([label, value, helper], index) => (
             <div
               className="dashboard-card finance-slide-up rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
@@ -442,7 +501,9 @@ function FinanceDashboard({
           <div className="dashboard-panel finance-slide-up rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="text-xl font-semibold">Goal analytics</h2>
             <p className="mt-1 text-sm text-slate-500">
-              {latestFinance.goal?.name} in {latestFinance.goal?.timeInMonths} months.
+              {goals.length > 1
+                ? `Across ${goals.length} goals with a combined target of ${formatCurrency(goalAmount)}.`
+                : `${latestFinance.goal?.name} in ${latestFinance.goal?.timeInMonths} months.`}
             </p>
 
             <div className="mt-6 grid gap-5">
@@ -477,9 +538,11 @@ function FinanceDashboard({
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="rounded-md bg-slate-50 p-4">
-                  <p className="text-sm text-slate-500">Months planned</p>
+                  <p className="text-sm text-slate-500">
+                    {goals.length > 1 ? 'Longest timeline' : 'Months planned'}
+                  </p>
                   <p className="mt-1 text-2xl font-semibold">
-                    {latestFinance.goal?.timeInMonths}
+                    {longestGoalTimeInMonths}
                   </p>
                 </div>
                 <div className="rounded-md bg-slate-50 p-4">
@@ -492,10 +555,10 @@ function FinanceDashboard({
 
               <div className="rounded-md border border-teal-100 bg-teal-50 p-4 text-sm leading-6 text-teal-900">
                 {latestFinance.isGoalAchieved
-                  ? 'Great work. Your remaining amount can cover the full goal today.'
+                  ? 'Great work. Your remaining amount can cover the full goal target today.'
                   : latestFinance.canAchieveMonthlyGoal
-                    ? "You can meet the monthly goal target with this month's remaining amount."
-                    : 'Your remaining amount is below the monthly target. Lower expenses or extend the timeline.'}
+                    ? "You can meet the combined monthly goal target with this month's remaining amount."
+                    : 'Your remaining amount is below the combined monthly target. Lower expenses or extend goal timelines.'}
               </div>
             </div>
           </div>
@@ -504,10 +567,22 @@ function FinanceDashboard({
         {dashboardSummary && (
           <section className="dashboard-panel finance-slide-up mt-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="text-xl font-semibold">Overall dashboard analytics</h2>
-            <div className="mt-5 grid gap-4 md:grid-cols-4">
+            <div className="mt-5 grid gap-4 md:grid-cols-3">
               <div className="rounded-md bg-slate-50 p-4">
                 <p className="text-sm text-slate-500">Total entries</p>
                 <p className="mt-1 text-2xl font-semibold">{dashboardSummary.totalEntries}</p>
+              </div>
+              <div className="rounded-md bg-slate-50 p-4">
+                <p className="text-sm text-slate-500">Total goal</p>
+                <p className="mt-1 text-2xl font-semibold">
+                  {formatCurrency(dashboardSummary.totalGoal)}
+                </p>
+              </div>
+              <div className="rounded-md bg-slate-50 p-4">
+                <p className="text-sm text-slate-500">Goal achievement</p>
+                <p className="mt-1 text-2xl font-semibold">
+                  {dashboardSummary.goalAchievementRate}%
+                </p>
               </div>
               <div className="rounded-md bg-slate-50 p-4">
                 <p className="text-sm text-slate-500">Savings rate</p>
@@ -623,6 +698,7 @@ function App() {
   const [loginData, setLoginData] = useState(initialLoginData)
   const [financeData, setFinanceData] = useState(initialFinanceData)
   const [addGoalData, setAddGoalData] = useState(initialGoalData)
+  const [profileFinanceData, setProfileFinanceData] = useState(initialProfileFinanceData)
   const [financeSummary, setFinanceSummary] = useState(null)
   const [dashboardData, setDashboardData] = useState(null)
   const [financeView, setFinanceView] = useState('input')
@@ -644,6 +720,34 @@ function App() {
   const isLogin = activeView === 'login'
   const isAuthenticated = Boolean(sessionToken && user)
 
+  const fetchFinanceDashboard = useCallback(async (token = sessionToken) => {
+    const response = await fetch(`${API_BASE_URL}/api/finance/dashboard`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+
+    const data = await readResponse(response)
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to fetch dashboard data')
+    }
+
+    setDashboardData(data)
+
+    if (data.entries?.[0]) {
+      const latestFinance = data.entries[0]
+
+      setFinanceSummary(latestFinance)
+      setProfileFinanceData({
+        salary: String(latestFinance.salary ?? ''),
+        expense: String(latestFinance.expense ?? ''),
+      })
+    }
+
+    return data
+  }, [sessionToken])
+
   useEffect(() => {
     if (!isAuthenticated || financeSummary) {
       return
@@ -664,7 +768,7 @@ function App() {
     }
 
     loadExistingFinance()
-  }, [isAuthenticated, financeSummary, sessionToken])
+  }, [fetchFinanceDashboard, financeSummary, isAuthenticated])
 
   const clearAlerts = () => {
     setMessage('')
@@ -716,6 +820,15 @@ function App() {
     const { name, value } = event.target
 
     setAddGoalData((currentData) => ({
+      ...currentData,
+      [name]: value,
+    }))
+  }
+
+  const handleProfileFinanceChange = (event) => {
+    const { name, value } = event.target
+
+    setProfileFinanceData((currentData) => ({
       ...currentData,
       [name]: value,
     }))
@@ -796,28 +909,6 @@ function App() {
     } finally {
       setIsLoading(false)
     }
-  }
-
-  const fetchFinanceDashboard = async (token = sessionToken) => {
-    const response = await fetch(`${API_BASE_URL}/api/finance/dashboard`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-
-    const data = await readResponse(response)
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to fetch dashboard data')
-    }
-
-    setDashboardData(data)
-
-    if (data.entries?.[0]) {
-      setFinanceSummary(data.entries[0])
-    }
-
-    return data
   }
 
   const handleFinanceSubmit = async (event) => {
@@ -931,6 +1022,39 @@ function App() {
     }
   }
 
+  const handleProfileFinanceSubmit = async (event) => {
+    event.preventDefault()
+    setIsLoading(true)
+    clearAlerts()
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/finance`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${sessionToken}`,
+        },
+        body: JSON.stringify({
+          salary: Number(profileFinanceData.salary),
+          expense: Number(profileFinanceData.expense),
+        }),
+      })
+
+      const data = await readResponse(response)
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to update salary and expense')
+      }
+
+      await fetchFinanceDashboard()
+      setMessage('Salary and expense updated successfully.')
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const handleLogout = async () => {
     setIsLoading(true)
     clearAlerts()
@@ -956,6 +1080,7 @@ function App() {
       setDashboardData(null)
       setFinanceView('input')
       setFinanceData(initialFinanceData)
+      setProfileFinanceData(initialProfileFinanceData)
       setActiveView('login')
       setMessage('You have been logged out.')
       setIsLoading(false)
@@ -974,9 +1099,12 @@ function App() {
           message={message}
           onAddGoal={handleAddGoal}
           onGoalChange={handleGoalChange}
+          onProfileFinanceChange={handleProfileFinanceChange}
+          onProfileFinanceSubmit={handleProfileFinanceSubmit}
           onRefresh={handleDashboardRefresh}
           onLogout={handleLogout}
           onToggleTheme={handleToggleTheme}
+          profileFinanceData={profileFinanceData}
           user={user}
           isDarkMode={isDarkMode}
         />
