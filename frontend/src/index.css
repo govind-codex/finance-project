@@ -3,12 +3,54 @@
 @keyframes financeFadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(18px) scale(0.98);
   }
 
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes dashboardDrift {
+  0% {
+    background-position: 0% 0%, 100% 0%, 0 0;
+  }
+
+  50% {
+    background-position: 20% 10%, 80% 20%, 24px 24px;
+  }
+
+  100% {
+    background-position: 0% 0%, 100% 0%, 0 0;
+  }
+}
+
+@keyframes heroGlow {
+  0%,
+  100% {
+    box-shadow: 0 20px 45px rgba(15, 118, 110, 0.2);
+  }
+
+  50% {
+    box-shadow: 0 28px 65px rgba(15, 118, 110, 0.34);
+  }
+}
+
+@keyframes profilePulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.38);
+  }
+
+  50% {
+    box-shadow: 0 0 0 8px rgba(255, 255, 255, 0);
+  }
+}
+
+@keyframes ringDraw {
+  from {
+    stroke-dashoffset: 280;
   }
 }
 
@@ -22,6 +64,33 @@
   }
 }
 
+.dashboard-shell {
+  background:
+    radial-gradient(circle at 12% 12%, rgba(20, 184, 166, 0.18), transparent 28%),
+    radial-gradient(circle at 88% 8%, rgba(249, 115, 22, 0.12), transparent 24%),
+    linear-gradient(135deg, rgba(15, 118, 110, 0.05) 25%, transparent 25%) 0 0 / 32px 32px,
+    #f4f7fb;
+  animation: dashboardDrift 18s ease-in-out infinite;
+}
+
+.finance-hero {
+  animation: financeFadeIn 520ms ease both, heroGlow 5s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+.finance-hero::after {
+  content: "";
+  position: absolute;
+  inset: -40% auto auto -10%;
+  width: 260px;
+  height: 260px;
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  filter: blur(4px);
+  pointer-events: none;
+}
+
 .finance-fade-in {
   animation: financeFadeIn 420ms ease both;
 }
@@ -30,11 +99,65 @@
   animation: financeFadeIn 520ms ease both;
 }
 
+.dashboard-card,
+.dashboard-panel,
+.dashboard-mini-panel {
+  transform-origin: center;
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease,
+    border-color 220ms ease;
+}
+
+.dashboard-card:hover,
+.dashboard-panel:hover,
+.dashboard-mini-panel:hover {
+  border-color: rgba(15, 118, 110, 0.22);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  transform: translateY(-4px);
+}
+
+.dashboard-mini-panel {
+  animation: financeFadeIn 460ms ease both;
+}
+
 .finance-bar {
   animation: financeBar 900ms ease both;
   transform-origin: left;
 }
 
 .finance-ring {
+  animation: ringDraw 1000ms ease both;
   transition: stroke-dashoffset 900ms ease;
+}
+
+.finance-ring-primary {
+  animation-duration: 1200ms;
+}
+
+.finance-ring-secondary {
+  animation-duration: 1450ms;
+}
+
+.profile-pulse {
+  animation: profilePulse 2.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-shell,
+  .finance-hero,
+  .finance-fade-in,
+  .finance-slide-up,
+  .finance-bar,
+  .finance-ring,
+  .profile-pulse,
+  .dashboard-mini-panel {
+    animation: none;
+  }
+
+  .dashboard-card,
+  .dashboard-panel,
+  .dashboard-mini-panel {
+    transition: none;
+  }
 }

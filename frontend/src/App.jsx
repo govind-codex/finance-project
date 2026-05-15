@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 const initialRegisterData = {
   name: '',
@@ -14,6 +14,12 @@ const initialLoginData = {
 const initialFinanceData = {
   salary: '',
   expense: '',
+  goalName: '',
+  goalAmount: '',
+  goalTimeInMonths: '',
+}
+
+const initialGoalData = {
   goalName: '',
   goalAmount: '',
   goalTimeInMonths: '',
@@ -49,14 +55,21 @@ const clampPercent = (value) => Math.max(0, Math.min(Number(value || 0), 100))
 function FinanceDashboard({
   dashboardData,
   financeSummary,
+  addGoalData,
+  error,
   user,
-  onAddAnother,
+  message,
+  onAddGoal,
+  onGoalChange,
   onRefresh,
   onLogout,
   isLoading,
 }) {
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
   const latestFinance = dashboardData?.entries?.[0] || financeSummary
   const dashboardSummary = dashboardData?.summary
+  const goals = latestFinance.goals?.length ? latestFinance.goals : [latestFinance.goal]
+  const canAddGoal = goals.length < 3
   const salary = Number(latestFinance.salary || 0)
   const expense = Number(latestFinance.expense || 0)
   const remaining = Number(latestFinance.remainingAmount || 0)
@@ -70,9 +83,9 @@ function FinanceDashboard({
   const circle = 2 * Math.PI * 44
 
   return (
-    <main className="min-h-screen bg-[#f4f7fb] text-slate-950">
+    <main className="dashboard-shell min-h-screen text-slate-950">
       <section className="mx-auto min-h-screen w-full max-w-7xl px-5 py-8">
-        <header className="finance-fade-in flex flex-col gap-4 rounded-lg bg-[#0f766e] p-6 text-white shadow-sm md:flex-row md:items-center md:justify-between">
+        <header className="finance-hero flex flex-col gap-4 rounded-lg bg-[#0f766e] p-6 text-white shadow-sm md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-100">
               Finance Dashboard
@@ -85,14 +98,15 @@ function FinanceDashboard({
 
           <div className="flex flex-col gap-3 sm:flex-row">
             <button
-              className="h-10 rounded-md bg-white px-5 text-sm font-semibold text-[#0f766e] transition hover:bg-teal-50"
-              onClick={onAddAnother}
+              className="profile-pulse grid size-10 place-items-center rounded-full bg-white text-sm font-bold text-[#0f766e] transition hover:bg-teal-50"
+              onClick={() => setIsProfileOpen((current) => !current)}
+              title="View profile"
               type="button"
             >
-              Add another input
+              {user.name?.slice(0, 1)?.toUpperCase() || 'U'}
             </button>
             <button
-              className="h-10 rounded-md border border-white/30 px-5 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-70"
+              className="h-10 rounded-md bg-white px-5 text-sm font-semibold text-[#0f766e] transition hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-70"
               disabled={isLoading}
               onClick={onRefresh}
               type="button"
@@ -110,6 +124,48 @@ function FinanceDashboard({
           </div>
         </header>
 
+        {isProfileOpen && (
+          <section className="dashboard-panel finance-slide-up mt-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-500">Profile</p>
+                <h2 className="mt-1 text-2xl font-semibold">{user.name}</h2>
+                <p className="mt-1 text-sm text-slate-600">{user.email}</p>
+              </div>
+              <div className="grid gap-3 text-sm sm:grid-cols-3">
+                <div className="rounded-md bg-slate-50 p-3">
+                  <p className="text-slate-500">Salary</p>
+                  <p className="mt-1 font-semibold">{formatCurrency(salary)}</p>
+                </div>
+                <div className="rounded-md bg-slate-50 p-3">
+                  <p className="text-slate-500">Expense</p>
+                  <p className="mt-1 font-semibold">{formatCurrency(expense)}</p>
+                </div>
+                <div className="rounded-md bg-slate-50 p-3">
+                  <p className="text-slate-500">Goals</p>
+                  <p className="mt-1 font-semibold">{goals.length}/3</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-3 md:grid-cols-3">
+              {goals.map((goal, index) => (
+                <div
+                  className="dashboard-mini-panel rounded-md border border-slate-200 p-4"
+                  key={`${goal.name}-${index}`}
+                  style={{ animationDelay: `${index * 80}ms` }}
+                >
+                  <p className="text-sm text-slate-500">Goal {index + 1}</p>
+                  <p className="mt-1 font-semibold text-slate-950">{goal.name}</p>
+                  <p className="mt-2 text-sm text-slate-600">
+                    {formatCurrency(goal.amount)} in {goal.timeInMonths} months
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         <section className="mt-6 grid gap-4 md:grid-cols-4">
           {[
             ['Salary', salary, 'Total income added by you'],
@@ -118,7 +174,7 @@ function FinanceDashboard({
             ['Goal Amount', goalAmount, latestFinance.goal?.name],
           ].map(([label, value, helper], index) => (
             <div
-              className="finance-slide-up rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
+              className="dashboard-card finance-slide-up rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
               key={label}
               style={{ animationDelay: `${index * 90}ms` }}
             >
@@ -132,7 +188,7 @@ function FinanceDashboard({
         </section>
 
         <section className="mt-6 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-          <div className="finance-slide-up rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="dashboard-panel finance-slide-up rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-xl font-semibold">Money split</h2>
@@ -157,7 +213,7 @@ function FinanceDashboard({
                     strokeWidth="14"
                   />
                   <circle
-                    className="finance-ring"
+                    className="finance-ring finance-ring-primary"
                     cx="60"
                     cy="60"
                     fill="none"
@@ -169,7 +225,7 @@ function FinanceDashboard({
                     strokeWidth="14"
                   />
                   <circle
-                    className="finance-ring"
+                    className="finance-ring finance-ring-secondary"
                     cx="60"
                     cy="60"
                     fill="none"
@@ -229,7 +285,7 @@ function FinanceDashboard({
             </div>
           </div>
 
-          <div className="finance-slide-up rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="dashboard-panel finance-slide-up rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="text-xl font-semibold">Goal analytics</h2>
             <p className="mt-1 text-sm text-slate-500">
               {latestFinance.goal?.name} in {latestFinance.goal?.timeInMonths} months.
@@ -284,7 +340,7 @@ function FinanceDashboard({
                 {latestFinance.isGoalAchieved
                   ? 'Great work. Your remaining amount can cover the full goal today.'
                   : latestFinance.canAchieveMonthlyGoal
-                    ? 'You can meet the monthly goal target with this month’s remaining amount.'
+                    ? "You can meet the monthly goal target with this month's remaining amount."
                     : 'Your remaining amount is below the monthly target. Lower expenses or extend the timeline.'}
               </div>
             </div>
@@ -292,7 +348,7 @@ function FinanceDashboard({
         </section>
 
         {dashboardSummary && (
-          <section className="finance-slide-up mt-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          <section className="dashboard-panel finance-slide-up mt-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="text-xl font-semibold">Overall dashboard analytics</h2>
             <div className="mt-5 grid gap-4 md:grid-cols-4">
               <div className="rounded-md bg-slate-50 p-4">
@@ -317,6 +373,91 @@ function FinanceDashboard({
             </p>
           </section>
         )}
+
+        <section className="dashboard-panel finance-slide-up mt-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-xl font-semibold">Goals</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                {canAddGoal
+                  ? `You can add ${3 - goals.length} more goal${3 - goals.length === 1 ? '' : 's'}.`
+                  : 'You have added the maximum 3 goals.'}
+              </p>
+            </div>
+            <span className="rounded-md bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700">
+              {goals.length}/3 goals
+            </span>
+          </div>
+
+          <div className="mt-5 grid gap-4 md:grid-cols-3">
+            {goals.map((goal, index) => (
+              <div
+                className="dashboard-mini-panel rounded-md border border-slate-200 bg-slate-50 p-4"
+                key={`${goal.name}-${index}`}
+                style={{ animationDelay: `${index * 80}ms` }}
+              >
+                <p className="text-sm text-slate-500">Goal {index + 1}</p>
+                <p className="mt-1 text-lg font-semibold">{goal.name}</p>
+                <p className="mt-2 text-sm text-slate-600">
+                  {formatCurrency(goal.amount)} in {goal.timeInMonths} months
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {canAddGoal && (
+            <form className="mt-6 grid gap-4 md:grid-cols-[1fr_160px_160px_auto]" onSubmit={onAddGoal}>
+              <input
+                className="h-11 rounded-md border border-slate-300 px-4 text-sm outline-none transition focus:border-[#0f766e] focus:ring-4 focus:ring-teal-100"
+                name="goalName"
+                onChange={onGoalChange}
+                placeholder="Goal name"
+                required
+                type="text"
+                value={addGoalData.goalName}
+              />
+              <input
+                className="h-11 rounded-md border border-slate-300 px-4 text-sm outline-none transition focus:border-[#0f766e] focus:ring-4 focus:ring-teal-100"
+                min="0"
+                name="goalAmount"
+                onChange={onGoalChange}
+                placeholder="Amount"
+                required
+                type="number"
+                value={addGoalData.goalAmount}
+              />
+              <input
+                className="h-11 rounded-md border border-slate-300 px-4 text-sm outline-none transition focus:border-[#0f766e] focus:ring-4 focus:ring-teal-100"
+                min="1"
+                name="goalTimeInMonths"
+                onChange={onGoalChange}
+                placeholder="Months"
+                required
+                type="number"
+                value={addGoalData.goalTimeInMonths}
+              />
+              <button
+                className="h-11 rounded-md bg-[#0f766e] px-5 text-sm font-semibold text-white transition hover:bg-[#115e59] disabled:cursor-not-allowed disabled:bg-slate-400"
+                disabled={isLoading}
+                type="submit"
+              >
+                Add goal
+              </button>
+            </form>
+          )}
+
+          {message && (
+            <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+              {message}
+            </div>
+          )}
+
+          {error && (
+            <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+        </section>
       </section>
     </main>
   )
@@ -327,6 +468,7 @@ function App() {
   const [registerData, setRegisterData] = useState(initialRegisterData)
   const [loginData, setLoginData] = useState(initialLoginData)
   const [financeData, setFinanceData] = useState(initialFinanceData)
+  const [addGoalData, setAddGoalData] = useState(initialGoalData)
   const [financeSummary, setFinanceSummary] = useState(null)
   const [dashboardData, setDashboardData] = useState(null)
   const [financeView, setFinanceView] = useState('input')
@@ -344,6 +486,28 @@ function App() {
 
   const isLogin = activeView === 'login'
   const isAuthenticated = Boolean(sessionToken && user)
+
+  useEffect(() => {
+    if (!isAuthenticated || financeSummary) {
+      return
+    }
+
+    const loadExistingFinance = async () => {
+      try {
+        const data = await fetchFinanceDashboard()
+
+        if (data.entries?.length > 0) {
+          setFinanceView('dashboard')
+          setFinanceSummary(data.entries[0])
+          setDashboardData(data)
+        }
+      } catch (err) {
+        console.warn('Failed to load existing finance data:', err)
+      }
+    }
+
+    loadExistingFinance()
+  }, [isAuthenticated, financeSummary, sessionToken])
 
   const clearAlerts = () => {
     setMessage('')
@@ -377,6 +541,15 @@ function App() {
     const { name, value } = event.target
 
     setFinanceData((currentData) => ({
+      ...currentData,
+      [name]: value,
+    }))
+  }
+
+  const handleGoalChange = (event) => {
+    const { name, value } = event.target
+
+    setAddGoalData((currentData) => ({
       ...currentData,
       [name]: value,
     }))
@@ -435,25 +608,22 @@ function App() {
       localStorage.setItem('sessionToken', data.session?.token || '')
       localStorage.setItem('sessionExpiresAt', data.session?.expiresAt || '')
       localStorage.setItem('user', JSON.stringify(data.user))
-      setSessionToken(data.session?.token || '')
+      const loginSessionToken = data.session?.token || ''
+      setSessionToken(loginSessionToken)
       setUser(data.user)
 
       setMessage(`Welcome back, ${data.user.name}. You are logged in.`)
       setLoginData(initialLoginData)
 
-      // Fetch finance data after login to determine initial view
       try {
-        const financeData = await fetchFinanceDashboard()
+        const financeData = await fetchFinanceDashboard(loginSessionToken)
         if (financeData.entries?.length > 0) {
           setFinanceView('dashboard')
           setFinanceSummary(financeData.entries[0])
           setDashboardData(financeData)
         }
-        // If no data, keep financeView as 'input' (default) so user sees input form
       } catch (financeErr) {
-        // If finance fetch fails, still show input form so user can try again
         console.warn('Failed to fetch finance data on login:', financeErr)
-        // Keep financeView as 'input' (default)
       }
     } catch (err) {
       setError(err.message)
@@ -462,10 +632,10 @@ function App() {
     }
   }
 
-  const fetchFinanceDashboard = async () => {
+  const fetchFinanceDashboard = async (token = sessionToken) => {
     const response = await fetch(`${API_BASE_URL}/api/finance/dashboard`, {
       headers: {
-        Authorization: `Bearer ${sessionToken}`,
+        Authorization: `Bearer ${token}`,
       },
     })
 
@@ -510,6 +680,18 @@ function App() {
       const data = await readResponse(response)
 
       if (!response.ok) {
+        if (response.status === 409) {
+          const dashboard = await fetchFinanceDashboard()
+
+          if (dashboard.entries?.length > 0) {
+            setFinanceSummary(dashboard.entries[0])
+            setDashboardData(dashboard)
+            setFinanceData(initialFinanceData)
+            setFinanceView('dashboard')
+            return
+          }
+        }
+
         throw new Error(data.message || 'Failed to save finance details')
       }
 
@@ -546,6 +728,43 @@ function App() {
     }
   }
 
+  const handleAddGoal = async (event) => {
+    event.preventDefault()
+    setIsLoading(true)
+    clearAlerts()
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/finance/goals`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${sessionToken}`,
+        },
+        body: JSON.stringify({
+          goal: {
+            name: addGoalData.goalName,
+            amount: Number(addGoalData.goalAmount),
+            timeInMonths: Number(addGoalData.goalTimeInMonths),
+          },
+        }),
+      })
+
+      const data = await readResponse(response)
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to add goal')
+      }
+
+      setAddGoalData(initialGoalData)
+      await fetchFinanceDashboard()
+      setMessage('Goal added successfully.')
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const handleLogout = async () => {
     setIsLoading(true)
     clearAlerts()
@@ -566,6 +785,7 @@ function App() {
       localStorage.removeItem('user')
       setSessionToken('')
       setUser(null)
+      setAddGoalData(initialGoalData)
       setFinanceSummary(null)
       setDashboardData(null)
       setFinanceView('input')
@@ -580,13 +800,14 @@ function App() {
     if (financeView === 'dashboard' && financeSummary) {
       return (
         <FinanceDashboard
+          addGoalData={addGoalData}
           dashboardData={dashboardData}
+          error={error}
           financeSummary={financeSummary}
           isLoading={isLoading}
-          onAddAnother={() => {
-            clearAlerts()
-            setFinanceView('input')
-          }}
+          message={message}
+          onAddGoal={handleAddGoal}
+          onGoalChange={handleGoalChange}
           onRefresh={handleDashboardRefresh}
           onLogout={handleLogout}
           user={user}
@@ -805,7 +1026,7 @@ function App() {
                         {financeSummary.isGoalAchieved
                           ? 'Full goal achieved with your remaining amount.'
                           : financeSummary.canAchieveMonthlyGoal
-                            ? 'You can hit this month’s target with your remaining amount.'
+                            ? "You can hit this month's target with your remaining amount."
                             : 'Monthly target not achieved yet. Try reducing expenses or increasing savings.'}
                       </p>
                     </div>
