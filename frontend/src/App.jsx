@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Camera, X } from 'lucide-react'
+import { Camera, LogOut, Moon, RefreshCw, Sun, X } from 'lucide-react'
 
 const initialRegisterData = {
   name: '',
@@ -64,7 +64,9 @@ function FinanceDashboard({
   onGoalChange,
   onRefresh,
   onLogout,
+  onToggleTheme,
   isLoading,
+  isDarkMode,
 }) {
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const profilePhotoKey = `profilePhoto:${user.email || user.name || 'user'}`
@@ -106,22 +108,12 @@ function FinanceDashboard({
   }
 
   return (
-    <main className="dashboard-shell min-h-screen text-slate-950">
+    <main className={`dashboard-shell min-h-screen text-slate-950 ${isDarkMode ? 'theme-dark' : ''}`}>
       <section className="mx-auto min-h-screen w-full max-w-7xl px-5 py-8">
         <header className="finance-hero flex flex-col gap-4 rounded-lg bg-[#0f766e] p-6 text-white shadow-sm md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-100">
-              Finance Dashboard
-            </p>
-            <h1 className="mt-2 text-3xl font-semibold">Hi {user.name}, here is your analysis</h1>
-            <p className="mt-2 text-sm text-teal-50">
-              Your latest salary, expense, and goal plan turned into readable insights.
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="flex items-center gap-4">
             <button
-              className="profile-pulse relative grid size-10 place-items-center overflow-hidden rounded-full bg-white text-sm font-bold text-[#0f766e] transition hover:bg-teal-50"
+              className="profile-pulse relative grid size-14 shrink-0 place-items-center overflow-hidden rounded-full bg-white text-lg font-bold text-[#0f766e] transition hover:bg-teal-50"
               onClick={() => setIsProfileOpen((current) => !current)}
               title="View profile"
               type="button"
@@ -135,25 +127,39 @@ function FinanceDashboard({
               ) : (
                 user.name?.slice(0, 1)?.toUpperCase() || 'U'
               )}
-              <span className="absolute bottom-0 right-0 grid size-4 place-items-center rounded-full bg-orange-500 text-white">
-                <Camera size={10} />
+              <span className="absolute bottom-0 right-0 grid size-5 place-items-center rounded-full bg-orange-500 text-white">
+                <Camera size={11} />
               </span>
             </button>
+
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-100">
+                Finance Dashboard
+              </p>
+              <h1 className="mt-2 text-3xl font-semibold">Hi {user.name}, here is your analysis</h1>
+              <p className="mt-2 text-sm text-teal-50">
+                Your latest salary, expense, and goal plan turned into readable insights.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row">
             <button
-              className="h-10 rounded-md bg-white px-5 text-sm font-semibold text-[#0f766e] transition hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-70"
+              className="grid size-10 place-items-center rounded-md bg-white text-[#0f766e] transition hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-70"
               disabled={isLoading}
               onClick={onRefresh}
+              title="Refresh dashboard"
               type="button"
             >
-              Refresh dashboard
+              <RefreshCw className={isLoading ? 'animate-spin' : ''} size={18} />
             </button>
             <button
-              className="h-10 rounded-md border border-white/30 px-5 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-70"
-              disabled={isLoading}
-              onClick={onLogout}
+              className="grid size-10 place-items-center rounded-md border border-white/30 text-white transition hover:bg-white/10"
+              onClick={onToggleTheme}
+              title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
               type="button"
             >
-              Logout
+              {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>
           </div>
         </header>
@@ -241,6 +247,18 @@ function FinanceDashboard({
                     </div>
                   ))}
                 </div>
+              </div>
+
+              <div className="mt-auto border-t border-slate-200 p-5">
+                <button
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-md bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+                  disabled={isLoading}
+                  onClick={onLogout}
+                  type="button"
+                >
+                  <LogOut size={17} />
+                  Logout
+                </button>
               </div>
             </aside>
           </>
@@ -552,6 +570,9 @@ function App() {
   const [financeSummary, setFinanceSummary] = useState(null)
   const [dashboardData, setDashboardData] = useState(null)
   const [financeView, setFinanceView] = useState('input')
+  const [isDarkMode, setIsDarkMode] = useState(
+    () => localStorage.getItem('theme') === 'dark',
+  )
   const [sessionToken, setSessionToken] = useState(
     () => localStorage.getItem('sessionToken') || '',
   )
@@ -592,6 +613,15 @@ function App() {
   const clearAlerts = () => {
     setMessage('')
     setError('')
+  }
+
+  const handleToggleTheme = () => {
+    setIsDarkMode((currentMode) => {
+      const nextMode = !currentMode
+
+      localStorage.setItem('theme', nextMode ? 'dark' : 'light')
+      return nextMode
+    })
   }
 
   const switchView = (view) => {
@@ -890,7 +920,9 @@ function App() {
           onGoalChange={handleGoalChange}
           onRefresh={handleDashboardRefresh}
           onLogout={handleLogout}
+          onToggleTheme={handleToggleTheme}
           user={user}
+          isDarkMode={isDarkMode}
         />
       )
     }
@@ -1121,10 +1153,18 @@ function App() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f4f7fb] text-slate-950">
+    <main className={`auth-shell min-h-screen text-slate-950 ${isDarkMode ? 'theme-dark' : ''}`}>
+      <button
+        className="auth-theme-toggle fixed right-5 top-5 z-20 grid size-11 place-items-center rounded-full border border-slate-200 bg-white text-[#0f766e] shadow-lg transition hover:-translate-y-0.5 hover:bg-teal-50"
+        onClick={handleToggleTheme}
+        title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+        type="button"
+      >
+        {isDarkMode ? <Sun size={19} /> : <Moon size={19} />}
+      </button>
       <section className="mx-auto flex min-h-screen w-full max-w-6xl items-center px-5 py-10">
-        <div className="grid w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm md:grid-cols-[0.95fr_1.05fr]">
-          <aside className="flex min-h-[560px] flex-col justify-between bg-[#0f766e] p-8 text-white md:p-10">
+        <div className="auth-card grid w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm md:grid-cols-[0.95fr_1.05fr]">
+          <aside className="auth-side flex min-h-[560px] flex-col justify-between bg-[#0f766e] p-8 text-white md:p-10">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-100">
                 Finance Project
@@ -1135,13 +1175,13 @@ function App() {
             </div>
 
             <div className="grid gap-4 text-sm text-teal-50">
-              <div className="rounded-md border border-white/20 bg-white/10 p-4">
+              <div className="auth-floating-card rounded-md border border-white/20 bg-white/10 p-4">
                 <p className="font-semibold text-white">Secure session</p>
                 <p className="mt-1 leading-6">
                   Login creates a session token that stays active for 24 hours.
                 </p>
               </div>
-              <div className="rounded-md border border-white/20 bg-white/10 p-4">
+              <div className="auth-floating-card rounded-md border border-white/20 bg-white/10 p-4">
                 <p className="font-semibold text-white">Finance dashboard</p>
                 <p className="mt-1 leading-6">
                   Add salary, expenses, and goals to review your dashboard analysis.
@@ -1151,7 +1191,7 @@ function App() {
           </aside>
 
           <div className="flex items-center p-6 md:p-10">
-            <div className="w-full">
+            <div className="auth-form-panel w-full">
               <div className="mb-8 flex rounded-md border border-slate-200 bg-slate-50 p-1">
                 <button
                   className={`h-10 flex-1 rounded px-4 text-sm font-semibold transition ${
