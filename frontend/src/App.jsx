@@ -31,7 +31,21 @@ const initialProfileFinanceData = {
   expense: '',
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
+const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '')
+
+const getApiUrl = (path) => `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`
+
+const apiFetch = async (path, options) => {
+  try {
+    return await fetch(getApiUrl(path), options)
+  } catch (error) {
+    const message = API_BASE_URL
+      ? `Could not connect to backend API at ${API_BASE_URL}. Check that the backend is deployed and CORS allows this frontend domain.`
+      : 'Backend API URL is not configured. Set VITE_API_BASE_URL to your deployed backend URL and redeploy the frontend.'
+
+    throw new Error(`${message} ${error.message}`, { cause: error })
+  }
+}
 
 const readResponse = async (response) => {
   const text = await response.text()
@@ -721,7 +735,7 @@ function App() {
   const isAuthenticated = Boolean(sessionToken && user)
 
   const fetchFinanceDashboard = useCallback(async (token = sessionToken) => {
-    const response = await fetch(`${API_BASE_URL}/api/finance/dashboard`, {
+    const response = await apiFetch('/api/finance/dashboard', {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -840,7 +854,7 @@ function App() {
     clearAlerts()
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+      const response = await apiFetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -870,7 +884,7 @@ function App() {
     clearAlerts()
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      const response = await apiFetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -917,7 +931,7 @@ function App() {
     clearAlerts()
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/finance`, {
+      const response = await apiFetch('/api/finance', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -991,7 +1005,7 @@ function App() {
     clearAlerts()
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/finance/goals`, {
+      const response = await apiFetch('/api/finance/goals', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1028,7 +1042,7 @@ function App() {
     clearAlerts()
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/finance`, {
+      const response = await apiFetch('/api/finance', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -1061,7 +1075,7 @@ function App() {
 
     try {
       if (sessionToken) {
-        await fetch(`${API_BASE_URL}/api/auth/logout`, {
+        await apiFetch('/api/auth/logout', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
