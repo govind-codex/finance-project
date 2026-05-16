@@ -5,15 +5,16 @@ const financeRoutes = require("./src/routes/financeRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const normalizeOrigin = (origin) => origin.replace(/\/+$/, "");
 const allowedOrigins = (process.env.FRONTEND_URL || process.env.CLIENT_ORIGIN || "")
   .split(",")
-  .map((origin) => origin.trim())
+  .map((origin) => normalizeOrigin(origin.trim()))
   .filter(Boolean);
 
 connectDB();
 
 app.use((req, res, next) => {
-  const origin = req.headers.origin;
+  const origin = req.headers.origin ? normalizeOrigin(req.headers.origin) : "";
 
   if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin || "*");
